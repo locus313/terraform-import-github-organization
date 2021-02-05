@@ -247,6 +247,7 @@ get_team_repos () {
 
     PERMS_PAYLOAD=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/teams/${TEAM_ID}/repos/${ORG}/${i}" -H "Accept: application/vnd.github.v3.repository+json")
     ADMIN_PERMS=$(echo "$PERMS_PAYLOAD" | jq -r .permissions.admin )
+    MAINTAIN_PERMS=$(echo "$PERMS_PAYLOAD" | jq -r .permissions.maintain )
     PUSH_PERMS=$(echo "$PERMS_PAYLOAD" | jq -r .permissions.push )
     PULL_PERMS=$(echo "$PERMS_PAYLOAD" | jq -r .permissions.pull )
   
@@ -256,6 +257,15 @@ resource "github_team_repository" "${TEAM_NAME}-${TERRAFORM_TEAM_REPO_NAME}" {
   team_id    = "${TEAM_ID}"
   repository = "${i}"
   permission = "admin"
+}
+
+EOF
+    elif [[ "${MAINTAIN_PERMS}" == "true" ]]; then
+      cat >> "github-teams-${TEAM_NAME}.tf" << EOF
+resource "github_team_repository" "${TEAM_NAME}-${TERRAFORM_TEAM_REPO_NAME}" {
+  team_id    = "${TEAM_ID}"
+  repository = "${i}"
+  permission = "maintain"
 }
 
 EOF
