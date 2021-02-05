@@ -46,28 +46,30 @@ import_public_repos () {
       PUBLIC_REPO_GITIGNORE_TEMPLATE=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r .gitignore_template)
       PUBLIC_REPO_LICENSE_TEMPLATE=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r '.license_template | select(type == "string")')
       PUBLIC_REPO_HOMEPAGE_URL=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r '.homepage | select(type == "string")')
+      PUBLIC_REPO_VULNERABILITY_ALERTS=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r .vulnerability_alerts)
      
       # Terraform doesn't like '.' in resource names, so if one exists then replace it with a dash
       TERRAFORM_PUBLIC_REPO_NAME=$(echo "${i}" | tr  "."  "-")
 
       cat >> github-public-repos.tf << EOF
 resource "github_repository" "${TERRAFORM_PUBLIC_REPO_NAME}" {
-  name               = "${i}"
-  topics             = ${PUBLIC_REPO_TOPICS}
-  description        = "${PUBLIC_REPO_DESCRIPTION}"
-  visibility         = "public"
-  has_wiki           = ${PUBLIC_REPO_WIKI}
-  has_projects       = ${PUBLIC_REPO_PROJECTS}
-  has_downloads      = ${PUBLIC_REPO_DOWNLOADS}
-  has_issues         = ${PUBLIC_REPO_ISSUES}
-  archived           = ${PUBLIC_REPO_ARCHIVED}
-  allow_merge_commit = ${PUBLIC_REPO_MERGE_COMMIT}
-  allow_rebase_merge = ${PUBLIC_REPO_REBASE_MERGE}
-  allow_squash_merge = ${PUBLIC_REPO_SQUASH_MERGE}
-  auto_init          = ${PUBLIC_REPO_AUTO_INIT}
-  gitignore_template = ${PUBLIC_REPO_GITIGNORE_TEMPLATE}
-  license_template   = "${PUBLIC_REPO_LICENSE_TEMPLATE}"
-  homepage_url       = "${PUBLIC_REPO_HOMEPAGE_URL}"
+  name                 = "${i}"
+  topics               = ${PUBLIC_REPO_TOPICS}
+  description          = "${PUBLIC_REPO_DESCRIPTION}"
+  visibility           = "public"
+  has_wiki             = ${PUBLIC_REPO_WIKI}
+  has_projects         = ${PUBLIC_REPO_PROJECTS}
+  has_downloads        = ${PUBLIC_REPO_DOWNLOADS}
+  has_issues           = ${PUBLIC_REPO_ISSUES}
+  archived             = ${PUBLIC_REPO_ARCHIVED}
+  allow_merge_commit   = ${PUBLIC_REPO_MERGE_COMMIT}
+  allow_rebase_merge   = ${PUBLIC_REPO_REBASE_MERGE}
+  allow_squash_merge   = ${PUBLIC_REPO_SQUASH_MERGE}
+  auto_init            = ${PUBLIC_REPO_AUTO_INIT}
+  gitignore_template   = ${PUBLIC_REPO_GITIGNORE_TEMPLATE}
+  license_template     = "${PUBLIC_REPO_LICENSE_TEMPLATE}"
+  homepage_url         = "${PUBLIC_REPO_HOMEPAGE_URL}"
+  vulnerability_alerts = "${PUBLIC_REPO_VULNERABILITY_ALERTS}"
 }
 EOF
 
@@ -108,28 +110,30 @@ import_private_repos () {
       PRIVATE_REPO_GITIGNORE_TEMPLATE=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r .gitignore_template)
       PRIVATE_REPO_LICENSE_TEMPLATE=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r '.license_template | select(type == "string")')
       PRIVATE_REPO_HOMEPAGE_URL=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r '.homepage | select(type == "string")')
+      PRIVATE_REPO_VULNERABILITY_ALERTS=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r .vulnerability_alerts)
      
       # Terraform doesn't like '.' in resource names, so if one exists then replace it with a dash
       TERRAFORM_PRIVATE_REPO_NAME=$(echo "${i}" | tr  "."  "-")
 
       cat >> github-private-repos.tf << EOF
 resource "github_repository" "${TERRAFORM_PRIVATE_REPO_NAME}" {
-  name               = "${i}"
-  visibility         = "private"
-  description        = "${PRIVATE_REPO_DESCRIPTION}"
-  has_wiki           = ${PRIVATE_REPO_WIKI}
-  has_projects       = ${PRIVATE_REPO_PROJECTS}
-  has_downloads      = ${PRIVATE_REPO_DOWNLOADS}
-  has_issues         = ${PRIVATE_REPO_ISSUES}
-  archived           = ${PRIVATE_REPO_ARCHIVED}
-  topics             = ${PRIVATE_REPO_TOPICS}
-  allow_merge_commit = ${PRIVATE_REPO_MERGE_COMMIT}
-  allow_rebase_merge = ${PRIVATE_REPO_REBASE_MERGE}
-  allow_squash_merge = ${PRIVATE_REPO_SQUASH_MERGE}
-  auto_init          = ${PRIVATE_REPO_AUTO_INIT}
-  gitignore_template = ${PRIVATE_REPO_GITIGNORE_TEMPLATE}
-  license_template   = "${PRIVATE_REPO_LICENSE_TEMPLATE}"
-  homepage_url       = "${PRIVATE_REPO_HOMEPAGE_URL}"
+  name                 = "${i}"
+  visibility           = "private"
+  description          = "${PRIVATE_REPO_DESCRIPTION}"
+  has_wiki             = ${PRIVATE_REPO_WIKI}
+  has_projects         = ${PRIVATE_REPO_PROJECTS}
+  has_downloads        = ${PRIVATE_REPO_DOWNLOADS}
+  has_issues           = ${PRIVATE_REPO_ISSUES}
+  archived             = ${PRIVATE_REPO_ARCHIVED}
+  topics               = ${PRIVATE_REPO_TOPICS}
+  allow_merge_commit   = ${PRIVATE_REPO_MERGE_COMMIT}
+  allow_rebase_merge   = ${PRIVATE_REPO_REBASE_MERGE}
+  allow_squash_merge   = ${PRIVATE_REPO_SQUASH_MERGE}
+  auto_init            = ${PRIVATE_REPO_AUTO_INIT}
+  gitignore_template   = ${PRIVATE_REPO_GITIGNORE_TEMPLATE}
+  license_template     = "${PRIVATE_REPO_LICENSE_TEMPLATE}"
+  homepage_url         = "${PRIVATE_REPO_HOMEPAGE_URL}"
+  vulnerability_alerts = "${PRIVATE_REPO_VULNERABILITY_ALERTS}"
 }
 
 EOF
