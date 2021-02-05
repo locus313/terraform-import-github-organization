@@ -16,7 +16,7 @@ API_URL_PREFIX=${API_URL_PREFIX:-'https://api.github.com'}
   # You can only list 100 items per page, so you can only clone 100 at a time.
   # This function uses the API to calculate how many pages of public repos you have.
 get_public_pagination () {
-    public_pages=$(curl -I "${API_URL_PREFIX}/orgs/${ORG}/repos?access_token=${GITHUB_TOKEN}&type=public&per_page=100" | grep -Eo '&page=[0-9]+' | grep -Eo '[0-9]+' | tail -1;)
+    public_pages=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -I "${API_URL_PREFIX}/orgs/${ORG}/repos?type=public&per_page=100" | grep -Eo '&page=[0-9]+' | grep -Eo '[0-9]+' | tail -1;)
     echo "${public_pages:-1}"
 }
   # This function uses the output from above and creates an array counting from 1->$ 
@@ -28,8 +28,8 @@ limit_public_pagination () {
 import_public_repos () {
   for PAGE in $(limit_public_pagination); do
   
-    for i in $(curl -s "${API_URL_PREFIX}/orgs/${ORG}/repos?access_token=${GITHUB_TOKEN}&type=public&page=${PAGE}&per_page=100&sort=full_name" | jq -r 'sort_by(.name) | .[] | .name'); do
-      PUBLIC_REPO_PAYLOAD=$(curl -s "${API_URL_PREFIX}/repos/${ORG}/${i}?access_token=${GITHUB_TOKEN}" -H "Accept: application/vnd.github.mercy-preview+json")
+    for i in $(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/orgs/${ORG}/repos?type=public&page=${PAGE}&per_page=100&sort=full_name" | jq -r 'sort_by(.name) | .[] | .name'); do
+      PUBLIC_REPO_PAYLOAD=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/repos/${ORG}/${i}" -H "Accept: application/vnd.github.mercy-preview+json")
   
       PUBLIC_REPO_DESCRIPTION=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r '.description | select(type == "string")' | sed "s/\"/'/g")
       PUBLIC_REPO_DOWNLOADS=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r .has_downloads)
@@ -79,7 +79,7 @@ EOF
 
 # Private Repos
 get_private_pagination () {
-    priv_pages=$(curl -I "${API_URL_PREFIX}/orgs/${ORG}/repos?access_token=${GITHUB_TOKEN}&type=private&per_page=100" | grep -Eo '&page=[0-9]+' | grep -Eo '[0-9]+' | tail -1;)
+    priv_pages=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -I "${API_URL_PREFIX}/orgs/${ORG}/repos?type=private&per_page=100" | grep -Eo '&page=[0-9]+' | grep -Eo '[0-9]+' | tail -1;)
     echo "${priv_pages:-1}"
 }
 
@@ -90,8 +90,8 @@ limit_private_pagination () {
 import_private_repos () {
   for PAGE in $(limit_private_pagination); do
 
-    for i in $(curl -s "${API_URL_PREFIX}/orgs/${ORG}/repos?access_token=${GITHUB_TOKEN}&type=private&page=${PAGE}&per_page=100&sort=full_name" | jq -r 'sort_by(.name) | .[] | .name'); do
-      PRIVATE_REPO_PAYLOAD=$(curl -s "${API_URL_PREFIX}/repos/${ORG}/${i}?access_token=${GITHUB_TOKEN}" -H "Accept: application/vnd.github.mercy-preview+json")
+    for i in $(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/orgs/${ORG}/repos?type=private&page=${PAGE}&per_page=100&sort=full_name" | jq -r 'sort_by(.name) | .[] | .name'); do
+      PRIVATE_REPO_PAYLOAD=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/repos/${ORG}/${i}" -H "Accept: application/vnd.github.mercy-preview+json")
 
       PRIVATE_REPO_DESCRIPTION=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r '.description | select(type == "string")' | sed "s/\"/'/g")
       PRIVATE_REPO_DOWNLOADS=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r .has_downloads)
@@ -141,9 +141,9 @@ EOF
 
 # Users
 import_users () {
-  for i in $(curl -s "${API_URL_PREFIX}/orgs/${ORG}/members?access_token=${GITHUB_TOKEN}&per_page=100" | jq -r 'sort_by(.login) | .[] | .login'); do
+  for i in $(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/orgs/${ORG}/members?per_page=100" | jq -r 'sort_by(.login) | .[] | .login'); do
 
-  MEMBERSHIP_ROLE=$(curl -s "${API_URL_PREFIX}/orgs/${ORG}/memberships/${i}?access_token=${GITHUB_TOKEN}" | jq -r .role)
+  MEMBERSHIP_ROLE=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/orgs/${ORG}/memberships/${i}" | jq -r .role)
 
   cat >> github-users.tf << EOF
 resource "github_membership" "${i}" {
@@ -157,8 +157,8 @@ EOF
 
 # Teams
 import_teams () {
-  for i in $(curl -s "${API_URL_PREFIX}/orgs/${ORG}/teams?access_token=${GITHUB_TOKEN}&per_page=100" -H "Accept: application/vnd.github.hellcat-preview+json" | jq -r 'sort_by(.name) | .[] | .id'); do
-    TEAM_PAYLOAD=$(curl -s "${API_URL_PREFIX}/teams/${i}?access_token=${GITHUB_TOKEN}&per_page=100" -H "Accept: application/vnd.github.hellcat-preview+json")
+  for i in $(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/orgs/${ORG}/teams?per_page=100" -H "Accept: application/vnd.github.hellcat-preview+json" | jq -r 'sort_by(.name) | .[] | .id'); do
+    TEAM_PAYLOAD=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/teams/${i}?per_page=100" -H "Accept: application/vnd.github.hellcat-preview+json")
 
     TEAM_NAME=$(echo "$TEAM_PAYLOAD" | jq -r .name)
     TEAM_NAME_NO_SPACE=`echo $TEAM_NAME | tr " " "_" | tr "/" "_"`
@@ -191,13 +191,13 @@ EOF
 
 # Team Memberships 
 import_team_memberships () {
-  for i in $(curl -s "${API_URL_PREFIX}/orgs/${ORG}/teams?access_token=${GITHUB_TOKEN}&per_page=100" -H "Accept: application/vnd.github.hellcat-preview+json" | jq -r 'sort_by(.name) | .[] | .id'); do
+  for i in $(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/orgs/${ORG}/teams?per_page=100" -H "Accept: application/vnd.github.hellcat-preview+json" | jq -r 'sort_by(.name) | .[] | .id'); do
   
-  TEAM_NAME=$(curl -s "${API_URL_PREFIX}/teams/${i}?access_token=${GITHUB_TOKEN}&per_page=100" -H "Accept: application/vnd.github.hellcat-preview+json" | jq -r .name | tr " " "_" | tr "/" "_")
+  TEAM_NAME=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/teams/${i}?per_page=100" -H "Accept: application/vnd.github.hellcat-preview+json" | jq -r .name | tr " " "_" | tr "/" "_")
   
-    for j in $(curl -s "${API_URL_PREFIX}/teams/${i}/members?access_token=${GITHUB_TOKEN}&per_page=100" -H "Accept: application/vnd.github.hellcat-preview+json" | jq -r .[].login); do
+    for j in $(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/teams/${i}/members?per_page=100" -H "Accept: application/vnd.github.hellcat-preview+json" | jq -r .[].login); do
     
-      TEAM_ROLE=$(curl -s "${API_URL_PREFIX}/teams/${i}/memberships/${j}?access_token=${GITHUB_TOKEN}&per_page=100" -H "Accept: application/vnd.github.hellcat-preview+json" | jq -r .role)
+      TEAM_ROLE=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/teams/${i}/memberships/${j}?per_page=100" -H "Accept: application/vnd.github.hellcat-preview+json" | jq -r .role)
 
       if [[ "${TEAM_ROLE}" == "maintainer" ]]; then
         cat >> "github-team-memberships-${TEAM_NAME}.tf" << EOF
@@ -222,7 +222,7 @@ EOF
 }
 
 get_team_pagination () {
-    team_pages=$(curl -I "${API_URL_PREFIX}/orgs/${ORG}/repos?access_token=${GITHUB_TOKEN}&per_page=100" | grep -Eo '&page=\d+' | grep -Eo '[0-9]+' | tail -1;)
+    team_pages=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -I "${API_URL_PREFIX}/orgs/${ORG}/repos?per_page=100" | grep -Eo '&page=\d+' | grep -Eo '[0-9]+' | tail -1;)
     echo "${team_pages:-1}"
 }
   # This function uses the out from above and creates an array counting from 1->$ 
@@ -231,19 +231,19 @@ limit_team_pagination () {
 }
 
 get_team_ids () {
-  echo   curl -s "${API_URL_PREFIX}/orgs/${ORG}/teams?access_token=${GITHUB_TOKEN}&per_page=100" -H "Accept: application/vnd.github.hellcat-preview+json" | jq -r 'sort_by(.name) | .[] | .id'
-  curl -s "${API_URL_PREFIX}/orgs/${ORG}/teams?access_token=${GITHUB_TOKEN}&per_page=100" -H "Accept: application/vnd.github.hellcat-preview+json" | jq -r 'sort_by(.name) | .[] | .id'
+  echo   curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/orgs/${ORG}/teams?per_page=100" -H "Accept: application/vnd.github.hellcat-preview+json" | jq -r 'sort_by(.name) | .[] | .id'
+  curl -s "${API_URL_PREFIX}/orgs/${ORG}/teams?per_page=100" -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.hellcat-preview+json" | jq -r 'sort_by(.name) | .[] | .id'
 }
 
 get_team_repos () {
   for PAGE in $(limit_team_pagination); do
 
-    for i in $(curl -s "${API_URL_PREFIX}/teams/${TEAM_ID}/repos?access_token=${GITHUB_TOKEN}&page=${PAGE}&per_page=100" | jq -r 'sort_by(.name) | .[] | .name'); do
+    for i in $(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/teams/${TEAM_ID}/repos?page=${PAGE}&per_page=100" | jq -r 'sort_by(.name) | .[] | .name'); do
     
     TERRAFORM_TEAM_REPO_NAME=$(echo "${i}" | tr  "."  "-")
-    TEAM_NAME=$(curl -s "${API_URL_PREFIX}/teams/${TEAM_ID}?access_token=${GITHUB_TOKEN}" | jq -r .name | tr " " "_" | tr "/" "_")
+    TEAM_NAME=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/teams/${TEAM_ID}" | jq -r .name | tr " " "_" | tr "/" "_")
 
-    PERMS_PAYLOAD=$(curl -s "${API_URL_PREFIX}/teams/${TEAM_ID}/repos/${ORG}/${i}?access_token=${GITHUB_TOKEN}" -H "Accept: application/vnd.github.v3.repository+json")
+    PERMS_PAYLOAD=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/teams/${TEAM_ID}/repos/${ORG}/${i}" -H "Accept: application/vnd.github.v3.repository+json")
     ADMIN_PERMS=$(echo "$PERMS_PAYLOAD" | jq -r .permissions.admin )
     PUSH_PERMS=$(echo "$PERMS_PAYLOAD" | jq -r .permissions.push )
     PULL_PERMS=$(echo "$PERMS_PAYLOAD" | jq -r .permissions.pull )
