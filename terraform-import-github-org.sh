@@ -55,7 +55,7 @@ resource "github_repository" "${TERRAFORM_PUBLIC_REPO_NAME}" {
   name               = "${i}"
   topics             = ${PUBLIC_REPO_TOPICS}
   description        = "${PUBLIC_REPO_DESCRIPTION}"
-  private            = false
+  visibility         = "public"
   has_wiki           = ${PUBLIC_REPO_WIKI}
   has_projects       = ${PUBLIC_REPO_PROJECTS}
   has_downloads      = ${PUBLIC_REPO_DOWNLOADS}
@@ -115,7 +115,7 @@ import_private_repos () {
       cat >> github-private-repos.tf << EOF
 resource "github_repository" "${TERRAFORM_PRIVATE_REPO_NAME}" {
   name               = "${i}"
-  private            = true
+  visibility         = "private"
   description        = "${PRIVATE_REPO_DESCRIPTION}"
   has_wiki           = ${PRIVATE_REPO_WIKI}
   has_projects       = ${PRIVATE_REPO_PROJECTS}
