@@ -203,7 +203,7 @@ import_team_memberships () {
         cat >> "github-team-memberships-${TEAM_NAME}.tf" << EOF
 resource "github_team_membership" "${TEAM_NAME}-${j}" {
   username    = "${j}"
-  team_id     = "\${github_team.${TEAM_NAME}.id}"
+  team_id     = github_team.${TEAM_NAME}.id
   role        = "maintainer"
 }
 EOF
@@ -211,7 +211,7 @@ EOF
         cat >> "github-team-memberships-${TEAM_NAME}.tf" << EOF
 resource "github_team_membership" "${TEAM_NAME}-${j}" {
   username    = "${j}"
-  team_id     = "\${github_team.${TEAM_NAME}.id}"
+  team_id     = github_team.${TEAM_NAME}.id
   role        = "member"
 }
 EOF
