@@ -224,7 +224,7 @@ EOF
 }
 
 get_team_pagination () {
-    team_pages=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -I "${API_URL_PREFIX}/orgs/${ORG}/repos?per_page=100" | grep -Eo '&page=\d+' | grep -Eo '[0-9]+' | tail -1;)
+    team_pages=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -I "${API_URL_PREFIX}/orgs/${ORG}/repos?per_page=100" | grep -Eo '&page=[0-9]+' | grep -Eo '[0-9]+' | tail -1;)
     echo "${team_pages:-1}"
 }
   # This function uses the out from above and creates an array counting from 1->$ 
