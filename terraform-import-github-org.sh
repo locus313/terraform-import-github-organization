@@ -69,7 +69,7 @@ resource "github_repository" "${TERRAFORM_PUBLIC_REPO_NAME}" {
   gitignore_template   = ${PUBLIC_REPO_GITIGNORE_TEMPLATE}
   license_template     = "${PUBLIC_REPO_LICENSE_TEMPLATE}"
   homepage_url         = "${PUBLIC_REPO_HOMEPAGE_URL}"
-  vulnerability_alerts = "${PUBLIC_REPO_VULNERABILITY_ALERTS}"
+  vulnerability_alerts = ${PUBLIC_REPO_VULNERABILITY_ALERTS}
 }
 EOF
 
@@ -133,7 +133,7 @@ resource "github_repository" "${TERRAFORM_PRIVATE_REPO_NAME}" {
   gitignore_template   = ${PRIVATE_REPO_GITIGNORE_TEMPLATE}
   license_template     = "${PRIVATE_REPO_LICENSE_TEMPLATE}"
   homepage_url         = "${PRIVATE_REPO_HOMEPAGE_URL}"
-  vulnerability_alerts = "${PRIVATE_REPO_VULNERABILITY_ALERTS}"
+  vulnerability_alerts = ${PRIVATE_REPO_VULNERABILITY_ALERTS}
 }
 
 EOF
