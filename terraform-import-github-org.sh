@@ -254,7 +254,7 @@ get_team_repos () {
     if [[ "${ADMIN_PERMS}" == "true" ]]; then
       cat >> "github-teams-${TEAM_NAME}.tf" << EOF
 resource "github_team_repository" "${TEAM_NAME}-${TERRAFORM_TEAM_REPO_NAME}" {
-  team_id    = "${TEAM_ID}"
+  team_id    = github_team.${TEAM_NAME}.id
   repository = "${i}"
   permission = "admin"
 }
@@ -263,7 +263,7 @@ EOF
     elif [[ "${MAINTAIN_PERMS}" == "true" ]]; then
       cat >> "github-teams-${TEAM_NAME}.tf" << EOF
 resource "github_team_repository" "${TEAM_NAME}-${TERRAFORM_TEAM_REPO_NAME}" {
-  team_id    = "${TEAM_ID}"
+  team_id    = github_team.${TEAM_NAME}.id
   repository = "${i}"
   permission = "maintain"
 }
@@ -272,7 +272,7 @@ EOF
     elif [[ "${PUSH_PERMS}" == "true" ]]; then
       cat >> "github-teams-${TEAM_NAME}.tf" << EOF
 resource "github_team_repository" "${TEAM_NAME}-${TERRAFORM_TEAM_REPO_NAME}" {
-  team_id    = "${TEAM_ID}"
+  team_id    = github_team.${TEAM_NAME}.id
   repository = "${i}"
   permission = "push"
 }
@@ -281,7 +281,7 @@ EOF
     elif [[ "${PULL_PERMS}" == "true" ]]; then
       cat >> "github-teams-${TEAM_NAME}.tf" << EOF
 resource "github_team_repository" "${TEAM_NAME}-${TERRAFORM_TEAM_REPO_NAME}" {
-  team_id    = "${TEAM_ID}"
+  team_id    = github_team.${TEAM_NAME}.id
   repository = "${i}"
   permission = "pull"
 }
