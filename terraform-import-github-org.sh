@@ -46,7 +46,6 @@ import_public_repos () {
       PUBLIC_REPO_GITIGNORE_TEMPLATE=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r .gitignore_template)
       PUBLIC_REPO_LICENSE_TEMPLATE=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r '.license_template | select(type == "string")')
       PUBLIC_REPO_HOMEPAGE_URL=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r '.homepage | select(type == "string")')
-      PUBLIC_REPO_VULNERABILITY_ALERTS=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r .vulnerability_alerts)
      
       # Terraform doesn't like '.' in resource names, so if one exists then replace it with a dash
       TERRAFORM_PUBLIC_REPO_NAME=$(echo "${i}" | tr  "."  "-")
@@ -69,7 +68,7 @@ resource "github_repository" "${TERRAFORM_PUBLIC_REPO_NAME}" {
   gitignore_template   = ${PUBLIC_REPO_GITIGNORE_TEMPLATE}
   license_template     = "${PUBLIC_REPO_LICENSE_TEMPLATE}"
   homepage_url         = "${PUBLIC_REPO_HOMEPAGE_URL}"
-  vulnerability_alerts = ${PUBLIC_REPO_VULNERABILITY_ALERTS}
+  vulnerability_alerts = true
 }
 EOF
 
@@ -110,7 +109,6 @@ import_private_repos () {
       PRIVATE_REPO_GITIGNORE_TEMPLATE=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r .gitignore_template)
       PRIVATE_REPO_LICENSE_TEMPLATE=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r '.license_template | select(type == "string")')
       PRIVATE_REPO_HOMEPAGE_URL=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r '.homepage | select(type == "string")')
-      PRIVATE_REPO_VULNERABILITY_ALERTS=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r .vulnerability_alerts)
      
       # Terraform doesn't like '.' in resource names, so if one exists then replace it with a dash
       TERRAFORM_PRIVATE_REPO_NAME=$(echo "${i}" | tr  "."  "-")
@@ -133,7 +131,7 @@ resource "github_repository" "${TERRAFORM_PRIVATE_REPO_NAME}" {
   gitignore_template   = ${PRIVATE_REPO_GITIGNORE_TEMPLATE}
   license_template     = "${PRIVATE_REPO_LICENSE_TEMPLATE}"
   homepage_url         = "${PRIVATE_REPO_HOMEPAGE_URL}"
-  vulnerability_alerts = ${PRIVATE_REPO_VULNERABILITY_ALERTS}
+  vulnerability_alerts = true
 }
 
 EOF
