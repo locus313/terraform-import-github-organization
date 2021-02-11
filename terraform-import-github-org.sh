@@ -74,6 +74,9 @@ EOF
 
       # Import the Repo
       terraform import "github_repository.${TERRAFORM_PUBLIC_REPO_NAME}" "${i}"
+      
+      # Import function to make ${i} repo names available to it
+      import_public_protected_branches
     done
   done
 }
@@ -137,7 +140,118 @@ resource "github_repository" "${TERRAFORM_PRIVATE_REPO_NAME}" {
 EOF
       # Import the Repo
       terraform import "github_repository.${TERRAFORM_PRIVATE_REPO_NAME}" "${i}"
+      
+      # Import function to make ${i} repo names available to it
+      import_private_protected_branches
     done
+  done
+}
+
+import_public_protected_branches () {
+
+PROTECTED_BRANCH=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/repos/${ORG}/${i}/branches?protected=true" | jq -r 'sort_by(.name) | .[] | .name' | tr "\n" " ")
+
+  for protected_branch in ${PROTECTED_BRANCH}; do
+
+      #avoid abusing the github api and reread the file from memory cache     
+      PROTECTION_BRANCH_PAYLOAD=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/repos/${ORG}/${PROTECTED_BRANCH}/branches" -H "Accept: application/vnd.github.mercy-preview+json")
+
+      REPO_PROTECTION_PAYLOAD=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/repos/${ORG}/${i}/branches" -H "Accept: application/vnd.github.mercy-preview+json")
+      PROTECTED_BRANCH_ENFORCE_ADMINS=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r .enforce_admins.enabled)     
+      PROTECTED_BRANCH_REQUIRED_STATUS_CHECKS_STRICT=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r '.required_status_checks.strict')
+      PROTECTED_BRANCH_REQUIRED_STATUS_CHECKS_CONTEXTS=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r '.required_status_checks.contexts')
+      PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_USERS=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r '.required_pull_request_reviews.users[]?.login')
+      PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_TEAMS=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r '.required_pull_request_reviews.team[]?.slug')
+      PROTECTED_BRANCH_RESTRICTIONS_USERS=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r '.restrictions.users[]?.login')
+      PROTECTED_BRANCH_RESTRICTIONS_TEAMS=$(echo "$PUBLIC_REPO_PAYLOAD" | jq -r '.restrictions.teams[]?.slug') 
+
+      # convert bash arrays into csv list
+      PROTECTED_BRANCH_RESTRICTIONS_USERS_LIST=$(echo "${PROTECTED_BRANCH_RESTRICTIONS_USERS}" | tr  " "  ", ")
+      PROTECTED_BRANCH_RESTRICTIONS_TEAMS_LIST=$(echo "${PROTECTED_BRANCH_RESTRICTIONS_TEAMS}" | tr  " "  ", ")
+      PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_USERS_LIST=$(echo "${PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_USERS}" | tr  " "  ", ")
+      PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_TEAMS_LIST=$(echo "${PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_TEAMS}" | tr  " "  ", ")
+
+      # replace forward slash with underscore in branch name
+      PROTECTED_BRANCH_NO_SlASH=$(echo "${protected_branch}" | tr "/" "_")
+
+      # write to terraform file
+      cat >> github-public-repos.tf << EOF
+resource "github_branch_protection_v3" "${i}-${PROTECTED_BRANCH_NO_SlASH}" {
+  repository     = github_repository.${i}.name
+  branch         = "${protected_branch}"
+  enforce_admins = ${PROTECTED_BRANCH_ENFORCE_ADMINS}
+  required_status_checks {
+    strict   = ${PROTECTED_BRANCH_REQUIRED_STATUS_CHECKS_STRICT}
+    contexts = ${PROTECTED_BRANCH_REQUIRED_STATUS_CHECKS_CONTEXTS}
+  }
+  required_pull_request_reviews {
+    dismiss_stale_reviews = true
+    dismissal_users       = ["${PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_USERS_LIST}"]
+    dismissal_teams       = ["${PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_TEAMS_LIST}"]
+  }
+  restrictions {
+    users = ["${PROTECTED_BRANCH_RESTRICTIONS_USERS_LIST}"]
+    teams = ["${PROTECTED_BRANCH_RESTRICTIONS_TEAMS_LIST}"]
+  }
+}
+EOF
+
+      # Import the Protected Branch
+      terraform import "github_branch_protection_v3.${i}-${PROTECTED_BRANCH_NO_SlASH}" "${i}:${protected_branch}" 
+  done
+}
+
+import_private_protected_branches () {
+
+PROTECTED_BRANCH=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/repos/${ORG}/${i}/branches?protected=true" | jq -r 'sort_by(.name) | .[] | .name' | tr "\n" " ")
+
+  for protected_branch in ${PROTECTED_BRANCH}; do
+
+      #avoid abusing the github api and reread the file from memory cache     
+      PROTECTION_BRANCH_PAYLOAD=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/repos/${ORG}/${PROTECTED_BRANCH}/branches" -H "Accept: application/vnd.github.mercy-preview+json")
+
+      REPO_PROTECTION_PAYLOAD=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -s "${API_URL_PREFIX}/repos/${ORG}/${i}/branches" -H "Accept: application/vnd.github.mercy-preview+json")
+      PROTECTED_BRANCH_ENFORCE_ADMINS=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r .enforce_admins.enabled)     
+      PROTECTED_BRANCH_REQUIRED_STATUS_CHECKS_STRICT=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r '.required_status_checks.strict')
+      PROTECTED_BRANCH_REQUIRED_STATUS_CHECKS_CONTEXTS=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r '.required_status_checks.contexts')
+      PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_USERS=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r '.required_pull_request_reviews.users[]?.login')
+      PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_TEAMS=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r '.required_pull_request_reviews.team[]?.slug')
+      PROTECTED_BRANCH_RESTRICTIONS_USERS=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r '.restrictions.users[]?.login')
+      PROTECTED_BRANCH_RESTRICTIONS_TEAMS=$(echo "$PRIVATE_REPO_PAYLOAD" | jq -r '.restrictions.teams[]?.slug') 
+
+      # convert bash arrays into csv list
+      PROTECTED_BRANCH_RESTRICTIONS_USERS_LIST=$(echo "${PROTECTED_BRANCH_RESTRICTIONS_USERS}" | tr  " "  ", ")
+      PROTECTED_BRANCH_RESTRICTIONS_TEAMS_LIST=$(echo "${PROTECTED_BRANCH_RESTRICTIONS_TEAMS}" | tr  " "  ", ")
+      PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_USERS_LIST=$(echo "${PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_USERS}" | tr  " "  ", ")
+      PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_TEAMS_LIST=$(echo "${PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_TEAMS}" | tr  " "  ", ")
+
+      # replace forward slash with underscore in branch name
+      PROTECTED_BRANCH_NO_SlASH=$(echo "${protected_branch}" | tr "/" "_")
+
+      # write to terraform file
+      cat >> github-private-repos.tf << EOF
+resource "github_branch_protection_v3" "${i}-${PROTECTED_BRANCH_NO_SlASH}" {
+  repository     = github_repository.${i}.name
+  branch         = "${protected_branch}"
+  enforce_admins = ${PROTECTED_BRANCH_ENFORCE_ADMINS}
+  required_status_checks {
+    strict   = ${PROTECTED_BRANCH_REQUIRED_STATUS_CHECKS_STRICT}
+    contexts = ${PROTECTED_BRANCH_REQUIRED_STATUS_CHECKS_CONTEXTS}
+  }
+  required_pull_request_reviews {
+    dismiss_stale_reviews = true
+    dismissal_users       = ["${PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_USERS_LIST}"]
+    dismissal_teams       = ["${PROTECTED_BRANCH_REQUIRED_PULL_REQUEST_REVIEWS_TEAMS_LIST}"]
+  }
+  restrictions {
+    users = ["${PROTECTED_BRANCH_RESTRICTIONS_USERS_LIST}"]
+    teams = ["${PROTECTED_BRANCH_RESTRICTIONS_TEAMS_LIST}"]
+  }
+}
+EOF
+
+      # Import the Protected Branch
+      terraform import "github_branch_protection_v3.${i}-${PROTECTED_BRANCH_NO_SlASH}" "${i}:${protected_branch}" 
   done
 }
 
